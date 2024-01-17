@@ -29,7 +29,7 @@ leaderboardRouter.post("/", middleware.decodeToken, async (req, res) => {
 leaderboardRouter.get("/", async (req, res) => {
   try {
     const lbData = await pool.query(
-      "SELECT * FROM leaderboard ORDER BY points DESC"
+      "SELECT * FROM leaderboard WHERE subscription=false ORDER BY points DESC"
     );
     res.json(lbData.rows);
   } catch (error) {
@@ -42,16 +42,13 @@ leaderboardRouter.patch(
   middleware.decodeToken,
   async (req, res) => {
     try {
-      const { unsubscribe, email } = req.body;
-      if (unsubscribe === undefined) {
+      const { subscription, email } = req.body;
+      if (subscription === undefined) {
         return res.status(400).send("Unsubscribe action is unknown");
       }
       await pool.query(
         "UPDATE leaderboard SET subscription=$1 WHERE email=$2",
-        [
-          !unsubscribe, // reversed since field is if user HAS subscription
-          email,
-        ]
+        [subscription, email]
       );
       res.send("Subscription updated successfully!");
     } catch (err) {
