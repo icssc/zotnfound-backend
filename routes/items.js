@@ -86,10 +86,12 @@ itemsRouter.post("/", async (req, res) => {
   }
 });
 
-//Get all items
+// Get all items (retrieves all fields except email)
 itemsRouter.get("/", async (req, res) => {
   try {
-    const allItems = await pool.query("SELECT * FROM items");
+    const allItems = await pool.query(
+      "SELECT id, name, description, type, location, date, itemDate, image, islost, isResolved, isHelped FROM items WHERE id=$1"
+    );
     res.json(allItems.rows);
   } catch (error) {
     console.error(error);
@@ -124,11 +126,22 @@ itemsRouter.get("/", async (req, res) => {
 //   res.json("nice");
 // });
 
-//Get a item
+// Get an item
 itemsRouter.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const item = await pool.query("SELECT * FROM items WHERE id=$1", [id]);
+    res.json(item.rows[0]);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+// Get email associated with an item id (only if user is logged in)
+itemsRouter.get("/:id/email", middleware.decodeToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await pool.query("SELECT email FROM items WHERE id=$1", [id]);
     res.json(item.rows[0]);
   } catch (error) {
     console.error(error);
