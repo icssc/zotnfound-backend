@@ -90,7 +90,7 @@ itemsRouter.post("/", async (req, res) => {
 itemsRouter.get("/", async (req, res) => {
   try {
     const allItems = await pool.query(
-      "SELECT id, name, description, type, location, date, itemDate, image, islost, isResolved, isHelped FROM items WHERE id=$1"
+      "SELECT id, name, description, type, location, date, itemDate, image, islost, isResolved, isHelped FROM items"
     );
     res.json(allItems.rows);
   } catch (error) {
