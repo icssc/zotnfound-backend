@@ -29,7 +29,7 @@ leaderboardRouter.post("/", middleware.decodeToken, async (req, res) => {
 leaderboardRouter.get("/", async (req, res) => {
   try {
     const lbData = await pool.query(
-      "SELECT * FROM leaderboard WHERE subscription=false ORDER BY points DESC"
+      "SELECT * FROM leaderboard ORDER BY points DESC"
     );
     res.json(lbData.rows);
   } catch (error) {
