@@ -47,40 +47,41 @@ itemsRouter.post("/", async (req, res) => {
       ]
     );
 
-    const nearbyItems = await pool.query(
-      "SELECT DISTINCT email FROM leaderboard WHERE email!=$1",
+    // query to get users
+    const subscribedUsers = await pool.query(
+      "SELECT DISTINCT email FROM leaderboard WHERE email!=$1 AND subscription=True",
       [email]
     );
 
-    res.json(item.rows[0]); // send the response immediately after adding the item
+    // res.json(item.rows[0]); // send the response immediately after adding the item
     let contentString = "";
 
     // COMMENT OUT FOR TESTING PURPOSES
-    // function sendDelayedEmail(index) {
-    //   if (index >= nearbyItems.rows.length) return;
+    function sendDelayedEmail(index) {
+      if (index >= subscribedUsers.rows.length) return;
 
-    //   let email = nearbyItems.rows[index].email;
-    //   contentString += `A new item, ${name}, is added to ZotnFound!`;
+      let email = subscribedUsers.rows[index].email;
+      contentString += `A new item, ${name}, is added to ZotnFound!`;
 
-    //   const dynamicContent = {
-    //     content: contentString,
-    //     image: image,
-    //     url: `https://zotnfound.com/${item.rows[0].id}`,
-    //   };
+      const dynamicContent = {
+        content: contentString,
+        image: image,
+        url: `https://zotnfound.com/${item.rows[0].id}`,
+      };
 
-    //   const customizedTemplate = template
-    //     .replace("{{content}}", dynamicContent.content)
-    //     .replace("{{image}}", dynamicContent.image)
-    //     .replace("{{url}}", dynamicContent.url);
+      const customizedTemplate = template
+        .replace("{{content}}", dynamicContent.content)
+        .replace("{{image}}", dynamicContent.image)
+        .replace("{{url}}", dynamicContent.url);
 
-    //   sendEmail(email, "A nearby item was added.", customizedTemplate);
+      sendEmail(email, "A nearby item was added.", customizedTemplate);
 
-    //   contentString = "";
-    //   console.log("sent " + email);
-    //   setTimeout(() => sendDelayedEmail(index + 1), 500);
-    // }
+      contentString = "";
+      console.log("sent " + email);
+      setTimeout(() => sendDelayedEmail(index + 1), 500); // recursive call to iterate through all user emails
+    }
 
-    // sendDelayedEmail(0);
+    sendDelayedEmail(0);
   } catch (error) {
     console.error(error);
   }

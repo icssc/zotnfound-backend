@@ -37,6 +37,27 @@ leaderboardRouter.get("/", async (req, res) => {
   }
 });
 
+leaderboardRouter.patch(
+  "/changeSubscription",
+  middleware.decodeToken,
+  async (req, res) => {
+    try {
+      const { subscription, email } = req.body;
+      if (subscription === undefined) {
+        return res.status(400).send("Unsubscribe action is unknown");
+      }
+      await pool.query(
+        "UPDATE leaderboard SET subscription=$1 WHERE email=$2",
+        [subscription, email]
+      );
+      res.send("Subscription updated successfully!");
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Internal server error");
+    }
+  }
+);
+
 // update user's points
 leaderboardRouter.put("/", middleware.decodeToken, async (req, res) => {
   const { email, pointsToAdd } = req.body; // Assume you're sending email and pointsToAdd in the request body
