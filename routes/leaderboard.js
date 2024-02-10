@@ -29,11 +29,28 @@ leaderboardRouter.post("/", middleware.decodeToken, async (req, res) => {
 leaderboardRouter.get("/", async (req, res) => {
   try {
     const lbData = await pool.query(
-      "SELECT * FROM leaderboard ORDER BY points DESC"
+      "SELECT * FROM leaderboard ORDER BY points DESC LIMIT 3"
     );
     res.json(lbData.rows);
   } catch (error) {
     console.log(error);
+  }
+});
+
+// get count of users in leaderboard
+leaderboardRouter.get("/count", async (req, res) => {
+  try {
+    const lbCount = await pool.query(
+      "SELECT COUNT(*) as count FROM leaderboard"
+    );
+    // Extract the count from the first row of the result set
+    const count = lbCount.rows[0].count;
+    // Send the count as a plain text response
+    res.header("Content-Type", "text/plain");
+    res.send(count.toString());
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Server error");
   }
 });
 

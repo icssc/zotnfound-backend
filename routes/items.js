@@ -53,49 +53,59 @@ itemsRouter.post("/", async (req, res) => {
       [email]
     );
 
-    // res.json(item.rows[0]); // send the response immediately after adding the item
+    res.json(item.rows[0]); // send the response immediately after adding the item
     let contentString = "";
 
     // COMMENT OUT FOR TESTING PURPOSES
-    function sendDelayedEmail(index) {
-      if (index >= subscribedUsers.rows.length) return;
+    if (process.env.NODE_ENV === "production") {
+      function sendDelayedEmail(index) {
+        if (index >= subscribedUsers.rows.length) return;
 
-      let email = subscribedUsers.rows[index].email;
-      contentString += `A new item, ${name}, is added to ZotnFound!`;
+        let email = subscribedUsers.rows[index].email;
+        contentString += `A new item, ${name}, is added to ZotnFound!`;
 
-      const dynamicContent = {
-        content: contentString,
-        image: image,
-        url: `https://zotnfound.com/${item.rows[0].id}`,
-      };
+        const dynamicContent = {
+          content: contentString,
+          image: image,
+          url: `https://zotnfound.com/${item.rows[0].id}`,
+        };
 
-      const customizedTemplate = template
-        .replace("{{content}}", dynamicContent.content)
-        .replace("{{image}}", dynamicContent.image)
-        .replace("{{url}}", dynamicContent.url);
+        const customizedTemplate = template
+          .replace("{{content}}", dynamicContent.content)
+          .replace("{{image}}", dynamicContent.image)
+          .replace("{{url}}", dynamicContent.url);
 
-      sendEmail(email, "A nearby item was added.", customizedTemplate);
+        sendEmail(email, "A nearby item was added.", customizedTemplate);
 
-      contentString = "";
-      console.log("sent " + email);
-      setTimeout(() => sendDelayedEmail(index + 1), 500); // recursive call to iterate through all user emails
+        contentString = "";
+        console.log("sent " + email);
+        setTimeout(() => sendDelayedEmail(index + 1), 500); // recursive call to iterate through all user emails
+      }
+
+      sendDelayedEmail(0);
     }
-
-    sendDelayedEmail(0);
   } catch (error) {
     console.error(error);
   }
 });
 
-// Get all items (retrieves all fields except email)
 itemsRouter.get("/", async (req, res) => {
   try {
+    // Retrieve the User-Email header
+    const userEmail = req.headers["user-email"];
+
+    // Modify your SQL query to conditionally select the email field
     const allItems = await pool.query(
-      "SELECT id, name, description, type, location, date, itemDate, image, islost, isResolved, isHelped FROM items"
+      `SELECT id, name, description, type, location, date, itemDate, image, islost, isResolved, isHelped, 
+      CASE WHEN email = $1 THEN email ELSE NULL END as email 
+      FROM items WHERE is_deleted = false`,
+      [userEmail] // Pass the userEmail as a parameter to the SQL query
     );
+
     res.json(allItems.rows);
   } catch (error) {
-    console.error(error);
+    console.error(error.message);
+    res.status(500).send("Server error");
   }
 });
 
@@ -179,17 +189,24 @@ itemsRouter.put("/:id", middleware.decodeToken, async (req, res) => {
   }
 });
 
-//Delete a item
+// Mark an item as deleted instead of removing it from the database
 itemsRouter.delete("/:id", middleware.decodeToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedItem = await pool.query(
-      "DELETE FROM items WHERE id=$1 RETURNING *",
+    const markAsDeleted = await pool.query(
+      "UPDATE items SET is_deleted = true WHERE id = $1 RETURNING *",
       [id]
     );
-    res.json(deletedItem.rows[0]);
+
+    // If no rows are returned, it means that there was no item with the given ID.
+    if (markAsDeleted.rowCount === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    res.json(markAsDeleted.rows[0]);
   } catch (error) {
-    console.error(error);
+    console.error(error.message);
+    res.status(500).send("Server error");
   }
 });
 
