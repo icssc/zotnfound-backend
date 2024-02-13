@@ -137,9 +137,55 @@ itemsRouter.get("/", async (req, res) => {
 //   res.json("nice");
 // });
 
+itemsRouter.get("/week", async (req, res) => {
+  try {
+    const items = await pool.query(
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '7 days'"
+    );
+    res.json(items.rows);
+  } catch (error) {
+    console.error({error});
+  }
+});
+
+itemsRouter.get("/two_weeks", async (req, res) => {
+  try {
+    const items = await pool.query(
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '14 days'"
+    );
+    res.json(items.rows);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+itemsRouter.get("/month", async (req, res) => {
+  try {
+    const items = await pool.query(
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '30 days'"
+    );
+    res.json(items.rows);
+  } catch (error) {
+    console.error(error);
+  }
+} );
+
+itemsRouter.get("/year", async (req, res) => { 
+  try {
+    console.log("year got entered here");
+    const items = await pool.query(
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '365 days'"
+    );
+    res.json(items.rows);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 // Get an item
 itemsRouter.get("/:id", async (req, res) => {
   try {
+    console.log("get item entered for some reason?")
     const { id } = req.params;
     const item = await pool.query("SELECT * FROM items WHERE id=$1", [id]);
     res.json(item.rows[0]);
@@ -209,5 +255,6 @@ itemsRouter.delete("/:id", middleware.decodeToken, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+
 
 module.exports = itemsRouter;
