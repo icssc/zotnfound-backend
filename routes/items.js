@@ -137,6 +137,50 @@ itemsRouter.get("/", async (req, res) => {
 //   res.json("nice");
 // });
 
+itemsRouter.get("/week", async (req, res) => {
+  try {
+    const items = await pool.query(
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '7 days' AND is_deleted = false"
+    );
+    res.json(items.rows);
+  } catch (error) {
+    console.error({ error });
+  }
+});
+
+itemsRouter.get("/two_weeks", async (req, res) => {
+  try {
+    const items = await pool.query(
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '14 days' AND is_deleted = false"
+    );
+    res.json(items.rows);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+itemsRouter.get("/month", async (req, res) => {
+  try {
+    const items = await pool.query(
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '30 days' AND is_deleted = false"
+    );
+    res.json(items.rows);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+itemsRouter.get("/year", async (req, res) => {
+  try {
+    const items = await pool.query(
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '365 days' AND is_deleted = false"
+    );
+    res.json(items.rows);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 // Get an item
 itemsRouter.get("/:id", async (req, res) => {
   try {
