@@ -140,18 +140,18 @@ itemsRouter.get("/", async (req, res) => {
 itemsRouter.get("/week", async (req, res) => {
   try {
     const items = await pool.query(
-      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '7 days'"
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '7 days' AND is_deleted = false"
     );
     res.json(items.rows);
   } catch (error) {
-    console.error({error});
+    console.error({ error });
   }
 });
 
 itemsRouter.get("/two_weeks", async (req, res) => {
   try {
     const items = await pool.query(
-      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '14 days'"
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '14 days' AND is_deleted = false"
     );
     res.json(items.rows);
   } catch (error) {
@@ -162,18 +162,18 @@ itemsRouter.get("/two_weeks", async (req, res) => {
 itemsRouter.get("/month", async (req, res) => {
   try {
     const items = await pool.query(
-      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '30 days'"
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '30 days' AND is_deleted = false"
     );
     res.json(items.rows);
   } catch (error) {
     console.error(error);
   }
-} );
+});
 
-itemsRouter.get("/year", async (req, res) => { 
+itemsRouter.get("/year", async (req, res) => {
   try {
     const items = await pool.query(
-      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '365 days'"
+      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '365 days' AND is_deleted = false"
     );
     res.json(items.rows);
   } catch (error) {
@@ -253,6 +253,5 @@ itemsRouter.delete("/:id", middleware.decodeToken, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
-
 
 module.exports = itemsRouter;
