@@ -9,6 +9,9 @@ const pool = require("../server/db");
 const templatePath = path.join(__dirname, "../emailTemplate/index.html");
 const template = fs.readFileSync(templatePath, "utf-8");
 const isPositionWithinBounds = require("../util/inbound");
+const {leaderboardTable, itemsTable} = require("../config/db-config.js");
+
+
 //Add a item
 itemsRouter.post("/", async (req, res) => {
   try {
@@ -31,7 +34,7 @@ itemsRouter.post("/", async (req, res) => {
     }
 
     const item = await pool.query(
-      "INSERT INTO items (name, description, type, islost, location, date, itemdate, email, image, isresolved, ishelped) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *",
+      `INSERT INTO ${itemsTable} (name, description, type, islost, location, date, itemdate, email, image, isresolved, ishelped) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
       [
         name,
         description,
@@ -49,7 +52,7 @@ itemsRouter.post("/", async (req, res) => {
 
     // query to get users
     const subscribedUsers = await pool.query(
-      "SELECT DISTINCT email FROM leaderboard WHERE email!=$1 AND subscription=True",
+      `SELECT DISTINCT email FROM ${leaderboardTable} WHERE email!=$1 AND subscription=True`,
       [email]
     );
 
@@ -98,7 +101,7 @@ itemsRouter.get("/", async (req, res) => {
     const allItems = await pool.query(
       `SELECT id, name, description, type, location, date, itemDate, image, islost, isResolved, isHelped, 
       CASE WHEN email = $1 THEN email ELSE NULL END as email 
-      FROM items WHERE is_deleted = false`,
+      FROM ${itemsTable} WHERE is_deleted = false`,
       [userEmail] // Pass the userEmail as a parameter to the SQL query
     );
 
@@ -140,7 +143,7 @@ itemsRouter.get("/", async (req, res) => {
 itemsRouter.get("/week", async (req, res) => {
   try {
     const items = await pool.query(
-      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '7 days' AND is_deleted = false"
+      `SELECT * FROM ${itemsTable} WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '7 days' AND is_deleted = false`
     );
     res.json(items.rows);
   } catch (error) {
@@ -151,7 +154,7 @@ itemsRouter.get("/week", async (req, res) => {
 itemsRouter.get("/two_weeks", async (req, res) => {
   try {
     const items = await pool.query(
-      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '14 days' AND is_deleted = false"
+      `SELECT * FROM ${itemsTable} WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '14 days' AND is_deleted = false`
     );
     res.json(items.rows);
   } catch (error) {
@@ -162,7 +165,7 @@ itemsRouter.get("/two_weeks", async (req, res) => {
 itemsRouter.get("/month", async (req, res) => {
   try {
     const items = await pool.query(
-      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '30 days' AND is_deleted = false"
+      `SELECT * FROM ${itemsTable} WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '30 days' AND is_deleted = false`
     );
     res.json(items.rows);
   } catch (error) {
@@ -173,7 +176,7 @@ itemsRouter.get("/month", async (req, res) => {
 itemsRouter.get("/year", async (req, res) => {
   try {
     const items = await pool.query(
-      "SELECT * FROM items WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '365 days' AND is_deleted = false"
+      `SELECT * FROM ${itemsTable} WHERE TO_TIMESTAMP(date, 'YYYY-MM-DD') > NOW() - interval '365 days' AND is_deleted = false`
     );
     res.json(items.rows);
   } catch (error) {
@@ -185,7 +188,7 @@ itemsRouter.get("/year", async (req, res) => {
 itemsRouter.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const item = await pool.query("SELECT * FROM items WHERE id=$1", [id]);
+    const item = await pool.query(`SELECT * FROM ${itemsTable} WHERE id=$1`, [id]);
     res.json(item.rows[0]);
   } catch (error) {
     console.error(error);
@@ -196,7 +199,7 @@ itemsRouter.get("/:id", async (req, res) => {
 itemsRouter.get("/:id/email", middleware.decodeToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const item = await pool.query("SELECT email FROM items WHERE id=$1", [id]);
+    const item = await pool.query(`SELECT email FROM ${itemsTable} WHERE id=$1`, [id]);
     res.json(item.rows[0]);
   } catch (error) {
     console.error(error);
@@ -207,7 +210,7 @@ itemsRouter.get("/:id/email", middleware.decodeToken, async (req, res) => {
 itemsRouter.get("/category/:category", async (req, res) => {
   try {
     const { category } = req.params;
-    const items = await pool.query("SELECT * FROM items WHERE type=$1", [
+    const items = await pool.query(`SELECT * FROM ${itemsTable} WHERE type=$1`, [
       category,
     ]);
     res.json(items.rows);
@@ -223,7 +226,7 @@ itemsRouter.put("/:id", middleware.decodeToken, async (req, res) => {
     const { ishelped } = req.body;
 
     const item = await pool.query(
-      "UPDATE items SET isresolved=$1, ishelped=$2 WHERE id=$3 RETURNING *",
+      `UPDATE ${itemsTable} SET isresolved=$1, ishelped=$2 WHERE id=$3 RETURNING *`,
       [true, ishelped, id]
     );
 
@@ -238,7 +241,7 @@ itemsRouter.delete("/:id", middleware.decodeToken, async (req, res) => {
   try {
     const { id } = req.params;
     const markAsDeleted = await pool.query(
-      "UPDATE items SET is_deleted = true WHERE id = $1 RETURNING *",
+      `UPDATE ${itemsTable} SET is_deleted = true WHERE id = $1 RETURNING *`,
       [id]
     );
 

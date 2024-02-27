@@ -1,9 +1,9 @@
 const express = require("express");
 const leaderboardRouter = express.Router();
 const middleware = require("../middleware");
+const {leaderboardTable} = require("../config/db-config.js");
 
 const pool = require("../server/db");
-
 // add a user to leaderboard
 leaderboardRouter.post("/", middleware.decodeToken, async (req, res) => {
   try {
@@ -14,7 +14,7 @@ leaderboardRouter.post("/", middleware.decodeToken, async (req, res) => {
     }
 
     await pool.query(
-      "INSERT INTO leaderboard (email, points) VALUES ($1, $2)",
+      `INSERT INTO ${leaderboardTable} (email, points) VALUES ($1, $2)`,
       [email, points]
     );
 
@@ -29,7 +29,7 @@ leaderboardRouter.post("/", middleware.decodeToken, async (req, res) => {
 leaderboardRouter.get("/", async (req, res) => {
   try {
     const lbData = await pool.query(
-      "SELECT * FROM leaderboard ORDER BY points DESC LIMIT 3"
+      `SELECT * FROM ${leaderboardTable} ORDER BY points DESC LIMIT 3`
     );
     res.json(lbData.rows);
   } catch (error) {
@@ -41,7 +41,7 @@ leaderboardRouter.get("/", async (req, res) => {
 leaderboardRouter.get("/count", async (req, res) => {
   try {
     const lbCount = await pool.query(
-      "SELECT COUNT(*) as count FROM leaderboard"
+      `SELECT COUNT(*) as count FROM ${leaderboardTable}`
     );
     // Extract the count from the first row of the result set
     const count = lbCount.rows[0].count;
@@ -64,7 +64,7 @@ leaderboardRouter.patch(
         return res.status(400).send("Unsubscribe action is unknown");
       }
       await pool.query(
-        "UPDATE leaderboard SET subscription=$1 WHERE email=$2",
+        `UPDATE ${leaderboardTable} SET subscription=$1 WHERE email=$2`,
         [subscription, email]
       );
       res.send("Subscription updated successfully!");
@@ -86,7 +86,7 @@ leaderboardRouter.put("/", middleware.decodeToken, async (req, res) => {
   try {
     // First, fetch the current points of the user
     const currentPointsResult = await pool.query(
-      "SELECT points FROM leaderboard WHERE email=$1",
+      `SELECT points FROM ${leaderboardTable} WHERE email=$1`,
       [email]
     );
 
@@ -98,7 +98,7 @@ leaderboardRouter.put("/", middleware.decodeToken, async (req, res) => {
     const newPoints = currentPoints + pointsToAdd;
 
     // Now, update the user's points in the leaderboard
-    await pool.query("UPDATE leaderboard SET points=$1 WHERE email=$2", [
+    await pool.query(`UPDATE ${leaderboardTable} SET points=$1 WHERE email=$2`, [
       newPoints,
       email,
     ]);
@@ -117,7 +117,7 @@ leaderboardRouter.delete("/:id", middleware.decodeToken, async (req, res) => {
     if (!id) {
       return res.status(400).send("id is required");
     }
-    await pool.query("DELETE FROM leaderboard WHERE id=$1", [id]);
+    await pool.query(`DELETE FROM ${leaderboardTable} WHERE id=$1`, [id]);
     res.status(200).send("User deleted from leaderboard");
   } catch (err) {
     console.error(err);
